@@ -10,7 +10,55 @@ from copy import copy
 from tkinter import *
 import tkinter as tk
 from tkinter import ttk
+from tkinter.ttk import Progressbar
+import time
 
+
+
+
+# ---------------------------main query----------------------------------
+def main_query(qmin, qmax):
+    #process_label['text'] = "please wait..."
+    conn = pyodbc.connect(r'Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=D:/WSU FY2012 OP.mdb;')
+    cursor = conn.cursor()
+
+    # --------------------SQL command--------
+    # example inputs to test the query:
+    a_v_min = "V140"
+    # a_v_min =
+    a_v_max = "V230"
+    a_e_min = "E140"
+    a_e_max = "E230"
+    a_min = 140
+    a_max = 230
+    # -------------------progress bar---------
+    #progress.place(relwidth=0.9, relheight=0.06, relx=0.6, rely=0.7)
+
+
+    #time.sleep(5)
+
+    #------------------------------------------
+
+    sql_command='''SELECT [FIPS County Code Table].[County Name], 
+    Count([FIPS County Code Table].[County Name]) AS [Count]  
+    FROM ([WSU_OP_Diagnosis] INNER JOIN [WSU_OP_Demographics] 
+    ON [WSU_OP_Diagnosis].CNTRL = [WSU_OP_Demographics].CNTRL) 
+    INNER JOIN [FIPS County Code Table] ON [WSU_OP_Demographics].statecounty = [FIPS County Code Table].FIPS_Code 
+    WHERE  ((([FIPS County Code Table].State)='Kansas') 
+    AND (([WSU_OP_Diagnosis].DIAG)> ? And ([WSU_OP_Diagnosis].DIAG)< ?)) 
+    GROUP BY [FIPS County Code Table].[County Name]ORDER BY [FIPS County Code Table].[County Name];
+     '''
+    # ----------------------------
+
+    cursor.execute(sql_command, (a_min, a_max))
+
+    for row in cursor.fetchall():
+        print(row)
+
+       # my_window.update()
+    # remember to add a Progressbar later
+    #progress.stop()
+    #progress.grid_forget()
 # -------------------------making the window------------------------
 
 my_window = Tk()
@@ -19,6 +67,9 @@ my_canvas = Canvas(my_window, background='white')
 # my_canvas.grid(row=3, column=0)
 my_window.geometry("500x500")
 
+# progress = Progressbar(my_window, orient=HORIZONTAL,length=300)
+# progress.grid(row=5, column=0,padx=40, pady=20)
+
 
 # -------------function run_query()---------called by button 1--------
 
@@ -26,20 +77,26 @@ my_window.geometry("500x500")
 # (result1, result2) = choices.get(key, ('default1', 'default2'))
 
 def run_query():
+    #progress.start()
     variable = my_combobox.get()
     (result1, result2) = choices.get(variable, ('default1', 'default2'))
+    process_label['text'] = "please wait..."
+    main_query(result1, result2)
 
-    print(result1)
-    print(result2)
+    # print(result1)
+    # print(result2)
 
-#----------------listbox------------------------
 
+# ----------------label------------------------
+process_label = ttk.Label(my_window,text=" ")
+process_label.grid(row=4, column=0,padx=40, pady=20)
+#process_label['text']="asda"
 # ---------------------- label ------------------------
 combo_label = ttk.Label(my_window, text="select diseases of: ")
 # combo_label.grid(row=0,sticky="")
-combo_label.place(relwidth=0.7, relheight=0.3, relx=0.3, rely=0.2)
+# combo_label.place(relwidth=0.7, relheight=0.3, relx=0.3, rely=0.2)
 # lable_sep=ttk.Separator(my_window,orient="horizontal")
-# lable_sep.grid(row=0, column=0)
+combo_label.grid(row=0, column=0,padx=40, pady=20)
 
 # ----------------------combo box------------------------
 
@@ -85,81 +142,25 @@ choices = {'infectious and parasitic diseases': (1, 1399),
 
 my_str_var = tk.StringVar()
 my_combobox = ttk.Combobox(my_window, textvariable=my_str_var, values=deases_lst)
-#my_combobox.grid(row=1, column=0)
-my_combobox.place(relwidth=0.6, relheight=0.05, relx=0.3, rely=0.4)
+my_combobox.grid(row=1, column=0,padx=40, pady=20)
+#my_combobox.place(relwidth=0.6, relheight=0.05, relx=0.3, rely=0.4)
 
-
-# ----------------------button 1------------------------
+# ----------------------button DB1------------------------
 
 button1 = ttk.Button(my_window, text="Show Results  from DB1",
                      command=lambda: run_query())
-#button1.grid(row=2, column=0)
-button1.place(relwidth=0.28, relheight=0.06, relx=0.3, rely=0.5)
-#------------------checkbutton-----------------------
-#measureSystem = StringVar()
+button1.grid(row=2, column=0, padx=40, pady=20)
+#button1.place(relwidth=0.28, relheight=0.06, relx=0.3, rely=0.5)
+# ------------------button DB1 & DB2-----------------------
+# measureSystem = StringVar()
 button2 = ttk.Button(my_window, text='Show Results from both',
-	    command=run_query())
-button2.place(relwidth=0.3, relheight=0.06, relx=0.6, rely=0.5)
-# ---------------------------------------
+                     command=lambda:run_query())
+#button2.place(relwidth=0.3, relheight=0.06, relx=0.6, rely=0.5)
+button2.grid(row=2, column=1, padx=10)
+# ----------------------running ----------------------
 
-conn = pyodbc.connect(r'Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=D:/WSU FY2012 OP.mdb;')
-cursor = conn.cursor()
+my_window.mainloop()
 
-# ------------------------SQL command--------------------------------------
-# example inputs to test the query:
-a_v_min = "V140"
-a_v_max = "V230"
-a_e_min = "E140"
-a_e_max = "E230"
-a_min = 140
-a_max = 230
-
-sql_command = '''SELECT [FIPS County Code Table].[County Name], [WSU_OP_Diagnosis].[DIAG]  FROM 
-(
-    ([WSU_OP_Diagnosis] INNER JOIN [WSU_OP_Demographics] ON [WSU_OP_Diagnosis].[CNTRL] = [WSU_OP_Demographics].[CNTRL]) 
-        INNER JOIN 
-    [FIPS County Code Table] 
-        ON [WSU_OP_Demographics].[statecounty] = [FIPS County Code Table].[FIPS_Code]
-) 
-WHERE 
-(
-    (
-        ([WSU_OP_Diagnosis].[DIAG]) > ? & ([WSU_OP_Diagnosis].[DIAG]) < ?
-    ) 
-    & 
-    (
-        ([FIPS County Code Table].[State])='Kansas'
-    )
-) 
-OR 
-(
-    (
-        ([WSU_OP_Diagnosis].[DIAG])> ? & ([WSU_OP_Diagnosis].[DIAG])< ?
-    ) 
-    & 
-    (
-        ([FIPS County Code Table].[State])='Kansas'
-    )
-)
-OR
-(
-    (
-        ([WSU_OP_Diagnosis].[DIAG])> ? & ([WSU_OP_Diagnosis].[DIAG])< ?
-    )  
-    & 
-    (
-        ([FIPS County Code Table].[State])='Kansas'
-    )
-)
-ORDER BY [FIPS County Code Table].[County Name]; '''
-
-# ------for the sake of time saving during test running, i comment this part for now:
-
-# cursor.execute(sql_command, (a_v_min, a_v_max, a_e_min, a_e_max, a_min, a_max))
-
-# for row in cursor.fetchall():
-#    print(row)
-# remember to add a Progressbar later
 # --------------------------------------------------------
 gdf = gpd.read_file('GU_CountyOrEquivalent.shp')
 df = pd.DataFrame(gdf)
@@ -189,6 +190,4 @@ seg2.to_csv('seg2_out.csv', encoding='utf-8')
 # new_df.to_csv('new-df.csv',encoding='utf-8')
 print(new_df.head())
 
-# ----------------------running ----------------------
 
-my_window.mainloop()
